@@ -1,0 +1,93 @@
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/9.2.0/checksums/checksums.lock b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/checksums/checksums.lock
+new file mode 100644
+index 0000000..404d71b
+Binary files /dev/null and b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/checksums/checksums.lock differ
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/9.2.0/checksums/md5-checksums.bin b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/checksums/md5-checksums.bin
+new file mode 100644
+index 0000000..beca02b
+Binary files /dev/null and b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/checksums/md5-checksums.bin differ
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/9.2.0/checksums/sha1-checksums.bin b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/checksums/sha1-checksums.bin
+new file mode 100644
+index 0000000..54c8ef2
+Binary files /dev/null and b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/checksums/sha1-checksums.bin differ
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/9.2.0/fileChanges/last-build.bin b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/fileChanges/last-build.bin
+new file mode 100644
+index 0000000..f76dd23
+Binary files /dev/null and b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/fileChanges/last-build.bin differ
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/9.2.0/fileHashes/fileHashes.bin b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/fileHashes/fileHashes.bin
+new file mode 100644
+index 0000000..4037160
+Binary files /dev/null and b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/fileHashes/fileHashes.bin differ
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/9.2.0/fileHashes/fileHashes.lock b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/fileHashes/fileHashes.lock
+new file mode 100644
+index 0000000..1eb3a21
+Binary files /dev/null and b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/fileHashes/fileHashes.lock differ
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/9.2.0/gc.properties b/node_modules/expo-nearby-connections/android/.gradle/9.2.0/gc.properties
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock b/node_modules/expo-nearby-connections/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock
+new file mode 100644
+index 0000000..6c2cadb
+Binary files /dev/null and b/node_modules/expo-nearby-connections/android/.gradle/buildOutputCleanup/buildOutputCleanup.lock differ
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/buildOutputCleanup/cache.properties b/node_modules/expo-nearby-connections/android/.gradle/buildOutputCleanup/cache.properties
+new file mode 100644
+index 0000000..b3a3124
+--- /dev/null
++++ b/node_modules/expo-nearby-connections/android/.gradle/buildOutputCleanup/cache.properties
+@@ -0,0 +1,2 @@
++#Sun Aug 16 18:05:42 EDT 2026
++gradle.version=9.2.0
+diff --git a/node_modules/expo-nearby-connections/android/.gradle/vcs-1/gc.properties b/node_modules/expo-nearby-connections/android/.gradle/vcs-1/gc.properties
+new file mode 100644
+index 0000000..e69de29
+diff --git a/node_modules/expo-nearby-connections/android/fix-prefab.gradle b/node_modules/expo-nearby-connections/android/fix-prefab.gradle
+new file mode 100644
+index 0000000..9320562
+--- /dev/null
++++ b/node_modules/expo-nearby-connections/android/fix-prefab.gradle
+@@ -0,0 +1,44 @@
++tasks.configureEach { task ->
++  def prefabConfigurePattern = ~/^prefab(.+)ConfigurePackage$/
++  def matcher = task.name =~ prefabConfigurePattern
++  if (matcher.matches()) {
++    def variantName = matcher[0][1]
++    task.outputs.upToDateWhen { false }
++    task.dependsOn("externalNativeBuild${variantName}")
++  }
++}
++
++afterEvaluate {
++  def abis = reactNativeArchitectures()
++  rootProject.allprojects.each { proj ->
++    if (proj === rootProject) return
++
++    def dependsOnThisLib = proj.configurations.findAll { it.canBeResolved }.any { config ->
++      config.dependencies.any { dep ->
++        dep.group == project.group && dep.name == project.name
++      }
++    }
++    if (!dependsOnThisLib && proj != project) return
++
++    if (!proj.plugins.hasPlugin('com.android.application') && !proj.plugins.hasPlugin('com.android.library')) {
++      return
++    }
++
++    def variants = proj.android.hasProperty('applicationVariants') ? proj.android.applicationVariants : proj.android.libraryVariants
++    variants.all { variant ->
++      def variantName = variant.name
++      abis.each { abi ->
++        def searchDir = new File(proj.projectDir, ".cxx/${variantName}")
++        if (!searchDir.exists()) return
++        def matches = []
++        searchDir.eachDir { randomDir ->
++          def prefabFile = new File(randomDir, "${abi}/prefab_config.json")
++          if (prefabFile.exists()) matches << prefabFile
++        }
++        matches.each { prefabConfig ->
++          prefabConfig.setLastModified(System.currentTimeMillis())
++        }
++      }
++    }
++  }
++}
+\ No newline at end of file

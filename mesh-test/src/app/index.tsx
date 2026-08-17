@@ -37,10 +37,6 @@ export default function HomeScreen() {
                 <ThemedText style={styles.brandTagline}>Local connection. Real support.</ThemedText>
               </View>
             </View>
-            <Pressable style={styles.bellButton}>
-              <Ionicons name="notifications-outline" size={20} color={MeshBrand.forest} />
-              <View style={styles.bellDot} />
-            </Pressable>
           </View>
 
           <Pressable style={styles.connectionPill} onPress={() => router.push('/devices')}>
@@ -153,6 +149,7 @@ export default function HomeScreen() {
               ))}
             </View>
           </View>
+
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -445,7 +442,7 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
   },
   resourceTile: {
-    width: '47%',
+    width: '48%',
     backgroundColor: MeshBrand.cream,
     borderRadius: Spacing.three,
     padding: Spacing.two,

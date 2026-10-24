@@ -1,14 +1,3 @@
-import React, { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  FlatList,
-  PermissionsAndroid,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   acceptConnection,
   BasePeer,
@@ -23,15 +12,26 @@ import {
   stopAdvertise,
   stopDiscovery,
   Strategy,
-} from 'expo-nearby-connections';
+} from "expo-nearby-connections";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  FlatList,
+  PermissionsAndroid,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
 
 const DEVICE_NAME = `${Platform.OS.toUpperCase()}_DEVICE_${Math.floor(Math.random() * 1000)}`;
 
 async function requestAndroidPermissions(): Promise<boolean> {
-  if (Platform.OS !== 'android') return true;
+  if (Platform.OS !== "android") return true;
 
   try {
     const apiLevel = Number(Platform.Version);
@@ -46,7 +46,7 @@ async function requestAndroidPermissions(): Promise<boolean> {
       ]);
 
       return Object.values(granted).every(
-        (status) => status === PermissionsAndroid.RESULTS.GRANTED
+        (status) => status === PermissionsAndroid.RESULTS.GRANTED,
       );
     } else {
       const granted = await PermissionsAndroid.requestMultiple([
@@ -62,7 +62,7 @@ async function requestAndroidPermissions(): Promise<boolean> {
       );
     }
   } catch (err) {
-    console.warn('Permission request error:', err);
+    console.warn("Permission request error:", err);
     return false;
   }
 }
@@ -95,14 +95,14 @@ export default function HomeScreen() {
     });
 
     const unsubInvitation = onInvitationReceived(({ peerId, name }) => {
-      Alert.alert('Connection Request', `Accept connection from ${name}?`, [
-        { text: 'Reject', style: 'cancel' },
-        { text: 'Accept', onPress: () => acceptConnection(peerId) },
+      Alert.alert("Connection Request", `Accept connection from ${name}?`, [
+        { text: "Reject", style: "cancel" },
+        { text: "Accept", onPress: () => acceptConnection(peerId) },
       ]);
     });
 
     const unsubConnected = onConnected(({ peerId, name }) => {
-      Alert.alert('Connected!', `Successfully connected to ${name}`);
+      Alert.alert("Connected!", `Successfully connected to ${name}`);
       setConnectedPeers((prev) => [...prev, peerId]);
     });
 
@@ -130,7 +130,10 @@ export default function HomeScreen() {
       } else {
         const hasPermissions = await requestAndroidPermissions();
         if (!hasPermissions) {
-          Alert.alert('Permission Error', 'Location/Bluetooth permissions are required.');
+          Alert.alert(
+            "Permission Error",
+            "Location/Bluetooth permissions are required.",
+          );
           return;
         }
 
@@ -139,12 +142,13 @@ export default function HomeScreen() {
         setIsAdvertising(true);
       }
     } catch (error: any) {
-      if (error?.message?.includes('8001')) {
-        setIsAdvertising(true);
-      } else {
-        Alert.alert('Error', 'Failed to start advertising. Check Bluetooth/Location.');
-        console.error(error);
-      }
+      console.error("ADVERTISE ERROR:", error);
+
+      Alert.alert(
+        "Advertise Error",
+        `Code: ${error?.code ?? "unknown"}\n` +
+          `Message: ${error?.message ?? String(error)}`,
+      );
     } finally {
       isActionBusyRef.current = false;
     }
@@ -162,7 +166,10 @@ export default function HomeScreen() {
       } else {
         const hasPermissions = await requestAndroidPermissions();
         if (!hasPermissions) {
-          Alert.alert('Permission Error', 'Location/Bluetooth permissions are required.');
+          Alert.alert(
+            "Permission Error",
+            "Location/Bluetooth permissions are required.",
+          );
           return;
         }
 
@@ -171,10 +178,13 @@ export default function HomeScreen() {
         setIsDiscovering(true);
       }
     } catch (error: any) {
-      if (error?.message?.includes('8002')) {
+      if (error?.message?.includes("8002")) {
         setIsDiscovering(true);
       } else {
-        Alert.alert('Error', 'Failed to start discovery. Check Bluetooth/Location.');
+        Alert.alert(
+          "Error",
+          "Failed to start discovery. Check Bluetooth/Location.",
+        );
         console.error(error);
       }
     } finally {
@@ -183,28 +193,31 @@ export default function HomeScreen() {
   };
 
   const handleConnect = async (peerId: string) => {
-  // Guard against mock peers during testing
-  if (peerId.startsWith('mock_')) {
-    Alert.alert('Debug Info', 'Cannot connect natively to a simulated mock peer.');
-    return;
-  }
-
-  try {
-    await requestConnection(peerId);
-  } catch (error: any) {
-    if (error?.message?.includes('8011') || error?.code === 8011) {
+    // Guard against mock peers during testing
+    if (peerId.startsWith("mock_")) {
       Alert.alert(
-        'Device Unavailable',
-        'This device is no longer advertising or went out of range.'
+        "Debug Info",
+        "Cannot connect natively to a simulated mock peer.",
       );
-      // Clean stale endpoint out of list
-      setDiscoveredPeers((prev) => prev.filter((p) => p.peerId !== peerId));
-    } else {
-      Alert.alert('Error', 'Failed to send connection request.');
-      console.error(error);
+      return;
     }
-  }
-};
+
+    try {
+      await requestConnection(peerId);
+    } catch (error: any) {
+      if (error?.message?.includes("8011") || error?.code === 8011) {
+        Alert.alert(
+          "Device Unavailable",
+          "This device is no longer advertising or went out of range.",
+        );
+        // Clean stale endpoint out of list
+        setDiscoveredPeers((prev) => prev.filter((p) => p.peerId !== peerId));
+      } else {
+        Alert.alert("Error", "Failed to send connection request.");
+        console.error(error);
+      }
+    }
+  };
 
   // --- DEBUG TEST FUNCTIONS ---
 
@@ -216,36 +229,51 @@ export default function HomeScreen() {
       setIsDiscovering(false);
       setDiscoveredPeers([]);
       setConnectedPeers([]);
-      Alert.alert('Debug Reset', 'Stopped all native advertising/discovery and cleared state.');
+      Alert.alert(
+        "Debug Reset",
+        "Stopped all native advertising/discovery and cleared state.",
+      );
     } catch (err) {
-      console.error('Debug Reset Error:', err);
+      console.error("Debug Reset Error:", err);
     }
   };
 
   const debugCheckPermissions = async () => {
     const apiLevel = Number(Platform.Version);
-    if (Platform.OS !== 'android') {
-      Alert.alert('Permissions', 'Not running on Android');
+    if (Platform.OS !== "android") {
+      Alert.alert("Permissions", "Not running on Android");
       return;
     }
 
     if (apiLevel >= 31) {
-      const fineLoc = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
-      const btScan = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN);
-      const btConnect = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT);
-      const btAdv = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE);
+      const fineLoc = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      );
+      const btScan = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
+      );
+      const btConnect = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
+      );
+      const btAdv = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
+      );
 
       Alert.alert(
-        'Permissions (API 31+)',
-        `Fine Loc: ${fineLoc}\nScan: ${btScan}\nConnect: ${btConnect}\nAdvertise: ${btAdv}`
+        "Permissions (API 31+)",
+        `Fine Loc: ${fineLoc}\nScan: ${btScan}\nConnect: ${btConnect}\nAdvertise: ${btAdv}`,
       );
     } else {
-      const fineLoc = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION);
-      const coarseLoc = await PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION);
+      const fineLoc = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+      );
+      const coarseLoc = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
+      );
 
       Alert.alert(
         `Permissions (API ${apiLevel})`,
-        `Fine Loc: ${fineLoc}\nCoarse Loc: ${coarseLoc}`
+        `Fine Loc: ${fineLoc}\nCoarse Loc: ${coarseLoc}`,
       );
     }
   };
@@ -272,7 +300,7 @@ export default function HomeScreen() {
             onPress={toggleAdvertise}
           >
             <ThemedText style={styles.buttonText}>
-              {isAdvertising ? 'Stop Advertising' : 'Advertise'}
+              {isAdvertising ? "Stop Advertising" : "Advertise"}
             </ThemedText>
           </Pressable>
 
@@ -281,25 +309,36 @@ export default function HomeScreen() {
             onPress={toggleDiscovery}
           >
             <ThemedText style={styles.buttonText}>
-              {isDiscovering ? 'Stop Discovery' : 'Discover'}
+              {isDiscovering ? "Stop Discovery" : "Discover"}
             </ThemedText>
           </Pressable>
         </View>
 
         {/* DEBUG BUTTONS PANEL */}
         <View style={styles.debugSection}>
-          <ThemedText type="small" style={styles.debugHeader}>Debug Tools</ThemedText>
+          <ThemedText type="small" style={styles.debugHeader}>
+            Debug Tools
+          </ThemedText>
           <View style={styles.debugButtonRow}>
             <Pressable style={styles.debugButton} onPress={debugResetAllNative}>
-              <ThemedText style={styles.debugButtonText}>Force Reset All</ThemedText>
+              <ThemedText style={styles.debugButtonText}>
+                Force Reset All
+              </ThemedText>
             </Pressable>
 
-            <Pressable style={styles.debugButton} onPress={debugCheckPermissions}>
-              <ThemedText style={styles.debugButtonText}>Check Perms</ThemedText>
+            <Pressable
+              style={styles.debugButton}
+              onPress={debugCheckPermissions}
+            >
+              <ThemedText style={styles.debugButtonText}>
+                Check Perms
+              </ThemedText>
             </Pressable>
 
             <Pressable style={styles.debugButton} onPress={debugAddMockPeer}>
-              <ThemedText style={styles.debugButtonText}>Add Mock Peer</ThemedText>
+              <ThemedText style={styles.debugButtonText}>
+                Add Mock Peer
+              </ThemedText>
             </Pressable>
           </View>
         </View>
@@ -321,12 +360,15 @@ export default function HomeScreen() {
                     <ThemedText type="small">{item.peerId}</ThemedText>
                   </View>
                   <Pressable
-                    style={[styles.connectButton, isConnected && styles.connectedButton]}
+                    style={[
+                      styles.connectButton,
+                      isConnected && styles.connectedButton,
+                    ]}
                     onPress={() => !isConnected && handleConnect(item.peerId)}
                     disabled={isConnected}
                   >
                     <ThemedText style={styles.connectButtonText}>
-                      {isConnected ? 'Connected' : 'Connect'}
+                      {isConnected ? "Connected" : "Connect"}
                     </ThemedText>
                   </Pressable>
                 </View>
@@ -334,7 +376,9 @@ export default function HomeScreen() {
             }}
             ListEmptyComponent={
               <ThemedText style={styles.emptyText}>
-                {isDiscovering ? 'Searching for nearby devices...' : 'Tap Discover to search.'}
+                {isDiscovering
+                  ? "Searching for nearby devices..."
+                  : "Tap Discover to search."}
               </ThemedText>
             }
           />
@@ -354,41 +398,41 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   subtitle: {
-    textAlign: 'center',
+    textAlign: "center",
     opacity: 0.8,
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 12,
   },
   button: {
     flex: 1,
     paddingVertical: 14,
     borderRadius: 8,
-    backgroundColor: '#007AFF',
-    alignItems: 'center',
+    backgroundColor: "#007AFF",
+    alignItems: "center",
   },
   buttonActive: {
-    backgroundColor: '#FF3B30',
+    backgroundColor: "#FF3B30",
   },
   buttonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontWeight: "bold",
   },
   debugSection: {
     padding: 10,
     borderRadius: 8,
-    backgroundColor: 'rgba(255, 149, 0, 0.1)',
+    backgroundColor: "rgba(255, 149, 0, 0.1)",
     borderWidth: 1,
-    borderColor: 'rgba(255, 149, 0, 0.3)',
+    borderColor: "rgba(255, 149, 0, 0.3)",
     gap: 6,
   },
   debugHeader: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
     opacity: 0.7,
   },
   debugButtonRow: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
   },
   debugButton: {
@@ -396,49 +440,49 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 6,
     borderRadius: 6,
-    backgroundColor: '#FF9500',
-    alignItems: 'center',
+    backgroundColor: "#FF9500",
+    alignItems: "center",
   },
   debugButtonText: {
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   listSection: {
     flex: 1,
     gap: 8,
   },
   peerCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     padding: 12,
     marginVertical: 4,
     borderRadius: 8,
-    backgroundColor: 'rgba(150, 150, 150, 0.1)',
+    backgroundColor: "rgba(150, 150, 150, 0.1)",
   },
   peerInfo: {
     flex: 1,
     marginRight: 8,
   },
   peerName: {
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   connectButton: {
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
-    backgroundColor: '#34C759',
+    backgroundColor: "#34C759",
   },
   connectedButton: {
-    backgroundColor: '#8E8E93',
+    backgroundColor: "#8E8E93",
   },
   connectButtonText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   emptyText: {
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 24,
     opacity: 0.6,
   },
